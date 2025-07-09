@@ -13,11 +13,18 @@ const LiveTracker: React.FC<LiveTrackerProps> = ({ shipmentData }) => {
 
   const steps = [
     { 
-      id: 'dispatched', 
-      title: 'Package Dispatched', 
+      id: 'order-placed', 
+      title: 'Order Placed', 
       icon: Package, 
-      location: shipmentData.senderAddress,
-      description: 'Your package has been picked up and is being prepared for transit'
+      location: 'Processing Center',
+      description: 'Your package has been received and is being prepared'
+    },
+    { 
+      id: 'dispatched', 
+      title: 'Dispatched', 
+      icon: Package, 
+      location: shipmentData.senderAddress || 'Origin',
+      description: 'Your package has been dispatched from our facility'
     },
     { 
       id: 'in-transit', 
@@ -44,31 +51,46 @@ const LiveTracker: React.FC<LiveTrackerProps> = ({ shipmentData }) => {
       id: 'delivered', 
       title: 'Delivered', 
       icon: Package, 
-      location: shipmentData.receiverAddress,
+      location: shipmentData.receiverAddress || 'Destination',
       description: 'Package has been successfully delivered'
     }
   ];
 
   useEffect(() => {
-    // Simulate shipment progress based on creation date and delivery days
+    // Determine current step based on status
+    const statusMap: { [key: string]: number } = {
+      'Order Placed': 0,
+      'Dispatched': 1,
+      'In Transit': 2,
+      'At Sorting Center': 3,
+      'Out for Delivery': 4,
+      'Delivered': 5
+    };
+
+    const stepIndex = statusMap[shipmentData.status] ?? 0;
+    setCurrentStep(stepIndex);
+
+    // Calculate progress within the step based on time
     const createdDate = new Date(shipmentData.createdAt);
     const now = new Date();
     const daysPassed = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
-    const totalDays = shipmentData.deliveryDays;
+    const totalDays = shipmentData.deliveryDays || 3;
     
-    let progressStep = Math.min(Math.floor((daysPassed / totalDays) * steps.length), steps.length - 1);
-    
-    // If it's a new shipment (less than 1 day), show at least dispatched
-    if (daysPassed === 0) progressStep = 0;
-    
-    setCurrentStep(progressStep);
-    
-    // Calculate animation progress within current step
+    // Add some animation progress within the current step
     const stepProgress = Math.min(((daysPassed / totalDays) * steps.length) % 1, 1);
-    setAnimationProgress(stepProgress);
+    setAnimationProgress(stepProgress * 0.5); // Reduce to make it more subtle
   }, [shipmentData]);
 
   const getEstimatedDelivery = () => {
+    if (shipmentData.estimatedDelivery) {
+      return new Date(shipmentData.estimatedDelivery).toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    }
+    
     const createdDate = new Date(shipmentData.createdAt);
     const deliveryDate = new Date(createdDate.getTime() + (shipmentData.deliveryDays * 24 * 60 * 60 * 1000));
     return deliveryDate.toLocaleDateString('en-US', { 
@@ -107,7 +129,6 @@ const LiveTracker: React.FC<LiveTrackerProps> = ({ shipmentData }) => {
                 const Icon = step.icon;
                 const isCompleted = index < currentStep;
                 const isCurrent = index === currentStep;
-                const isUpcoming = index > currentStep;
                 
                 return (
                   <div key={step.id} className="flex flex-col items-center">
@@ -149,20 +170,41 @@ const LiveTracker: React.FC<LiveTrackerProps> = ({ shipmentData }) => {
             </div>
             <div className="flex-1">
               <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                {steps[currentStep].title}
+                {shipmentData.status}
               </h3>
               <p className="text-gray-600 mb-2">
                 {steps[currentStep].description}
               </p>
               <div className="flex items-center text-sm text-gray-500">
                 <MapPin className="w-4 h-4 mr-1" />
-                <span>{steps[currentStep].location}</span>
+                <span>{shipmentData.currentLocation}</span>
                 <Clock className="w-4 h-4 ml-4 mr-1" />
                 <span>Updated: {new Date().toLocaleTimeString()}</span>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Status History */}
+        {shipmentData.statusHistory && shipmentData.statusHistory.length > 0 && (
+          <div className="mt-8 p-6 bg-gray-50 rounded-lg">
+            <h4 className="text-lg font-semibold mb-4">Tracking History</h4>
+            <div className="space-y-3">
+              {shipmentData.statusHistory.map((history: any, index: number) => (
+                <div key={index} className="flex items-center p-3 bg-white rounded-lg border">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full mr-4"></div>
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-800">{history.status}</div>
+                    <div className="text-sm text-gray-600">{history.location}</div>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {history.date} {history.time}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Route Animation */}
         <div className="mt-8 p-6 bg-gray-50 rounded-lg">

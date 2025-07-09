@@ -29,7 +29,7 @@ const Header = () => {
             </Link>
             <Link 
               to="/tracking" 
-              className={`hover:text-blue-600 transition-colors ${isActive('/tracking') ? 'text-blue-600 font-medium' : 'text-gray-700'}`}
+              className={`hover:text-blue-600 transition-colors ${isActive('/tracking') || isActive('/track') ? 'text-blue-600 font-medium' : 'text-gray-700'}`}
             >
               Track Package
             </Link>

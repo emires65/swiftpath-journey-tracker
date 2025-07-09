@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import AdminLogin from '../components/AdminLogin';
 import { Button } from '@/components/ui/button';
@@ -11,35 +12,25 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Package, Plus, Edit, Trash2, Search, LogOut } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Shipment {
   id: string;
-  trackingNumber: string;
-  senderName: string;
-  senderAddress: string;
-  senderCity: string;
-  senderPhone: string;
-  senderEmail: string;
-  receiverName: string;
-  receiverAddress: string;
-  receiverCity: string;
-  receiverPhone: string;
-  receiverEmail: string;
-  packageWeight: number;
-  packageDescription: string;
-  serviceType: string;
-  deliveryDays: number;
-  shippingFee: number;
+  tracking_number: string;
+  customer_name: string;
+  customer_email: string;
+  origin: string;
+  destination: string;
+  service: string;
   status: string;
-  currentLocation: string;
-  estimatedDelivery: string;
-  createdAt: string;
-  statusHistory: Array<{
-    status: string;
-    location: string;
-    date: string;
-    time: string;
-  }>;
+  weight?: string;
+  value?: string;
+  current_location?: string;
+  shipping_fee?: number;
+  delivery_days?: number;
+  estimated_delivery?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const AdminPage = () => {
@@ -50,27 +41,21 @@ const AdminPage = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [statusUpdateData, setStatusUpdateData] = useState({ status: '', location: '' });
+  const [loading, setLoading] = useState(false);
 
   const [newShipment, setNewShipment] = useState({
-    senderName: '',
-    senderAddress: '',
-    senderCity: '',
-    senderPhone: '',
-    senderEmail: '',
-    receiverName: '',
-    receiverAddress: '',
-    receiverCity: '',
-    receiverPhone: '',
-    receiverEmail: '',
-    packageWeight: 0,
-    packageDescription: '',
-    serviceType: 'standard',
-    deliveryDays: 3,
-    shippingFee: 0,
+    customer_name: '',
+    customer_email: '',
+    origin: '',
+    destination: '',
+    service: 'standard',
+    weight: '',
+    value: '',
+    shipping_fee: 0,
+    delivery_days: 3,
   });
 
   useEffect(() => {
-    // Check if admin is already authenticated
     const isAuth = localStorage.getItem('adminAuthenticated') === 'true';
     setIsAuthenticated(isAuth);
     
@@ -79,19 +64,30 @@ const AdminPage = () => {
     }
   }, []);
 
-  const loadShipments = () => {
-    const savedShipments = localStorage.getItem('shipments');
-    if (savedShipments) {
-      setShipments(JSON.parse(savedShipments));
-    }
-  };
+  const loadShipments = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('shipments')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  const saveShipments = (updatedShipments: Shipment[]) => {
-    localStorage.setItem('shipments', JSON.stringify(updatedShipments));
-    setShipments(updatedShipments);
-    
-    // Trigger a storage event to notify other components
-    window.dispatchEvent(new Event('storage'));
+      if (error) {
+        console.error('Error loading shipments:', error);
+        toast({
+          title: "Error loading shipments",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setShipments(data || []);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogin = (success: boolean) => {
@@ -114,8 +110,8 @@ const AdminPage = () => {
     return 'SN' + Math.random().toString(36).substr(2, 9).toUpperCase();
   };
 
-  const createShipment = () => {
-    if (!newShipment.senderName || !newShipment.receiverName || !newShipment.packageWeight || !newShipment.shippingFee) {
+  const createShipment = async () => {
+    if (!newShipment.customer_name || !newShipment.destination || !newShipment.shipping_fee) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields including shipping fee.",
@@ -124,68 +120,80 @@ const AdminPage = () => {
       return;
     }
 
-    const trackingNumber = generateTrackingNumber();
-    
-    const shipment: Shipment = {
-      id: Date.now().toString(),
-      trackingNumber,
-      senderName: newShipment.senderName,
-      senderAddress: newShipment.senderAddress,
-      senderCity: newShipment.senderCity,
-      senderPhone: newShipment.senderPhone,
-      senderEmail: newShipment.senderEmail,
-      receiverName: newShipment.receiverName,
-      receiverAddress: newShipment.receiverAddress,
-      receiverCity: newShipment.receiverCity,
-      receiverPhone: newShipment.receiverPhone,
-      receiverEmail: newShipment.receiverEmail,
-      packageWeight: newShipment.packageWeight,
-      packageDescription: newShipment.packageDescription,
-      serviceType: newShipment.serviceType,
-      deliveryDays: newShipment.deliveryDays,
-      shippingFee: newShipment.shippingFee,
-      status: 'Order Placed',
-      currentLocation: 'Processing Center',
-      estimatedDelivery: new Date(Date.now() + newShipment.deliveryDays * 24 * 60 * 60 * 1000).toLocaleDateString(),
-      createdAt: new Date().toISOString(),
-      statusHistory: [{
-        status: 'Order Placed',
-        location: 'Processing Center',
-        date: new Date().toLocaleDateString(),
-        time: new Date().toLocaleTimeString(),
-      }],
-    };
+    try {
+      setLoading(true);
+      const trackingNumber = generateTrackingNumber();
+      
+      const estimatedDelivery = new Date();
+      estimatedDelivery.setDate(estimatedDelivery.getDate() + newShipment.delivery_days);
 
-    const updatedShipments = [...shipments, shipment];
-    saveShipments(updatedShipments);
-    setIsCreateDialogOpen(false);
-    
-    // Reset form
-    setNewShipment({
-      senderName: '',
-      senderAddress: '',
-      senderCity: '',
-      senderPhone: '',
-      senderEmail: '',
-      receiverName: '',
-      receiverAddress: '',
-      receiverCity: '',
-      receiverPhone: '',
-      receiverEmail: '',
-      packageWeight: 0,
-      packageDescription: '',
-      serviceType: 'standard',
-      deliveryDays: 3,
-      shippingFee: 0,
-    });
+      const { data, error } = await supabase
+        .from('shipments')
+        .insert([{
+          tracking_number: trackingNumber,
+          customer_name: newShipment.customer_name,
+          customer_email: newShipment.customer_email,
+          origin: newShipment.origin,
+          destination: newShipment.destination,
+          service: newShipment.service,
+          status: 'Order Placed',
+          weight: newShipment.weight,
+          value: newShipment.value,
+          current_location: 'Processing Center',
+          shipping_fee: newShipment.shipping_fee,
+          delivery_days: newShipment.delivery_days,
+          estimated_delivery: estimatedDelivery.toISOString().split('T')[0],
+        }])
+        .select()
+        .single();
 
-    toast({
-      title: "Shipment Created",
-      description: `Tracking number: ${trackingNumber}`,
-    });
+      if (error) {
+        toast({
+          title: "Error creating shipment",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Add initial tracking history
+      await supabase
+        .from('tracking_history')
+        .insert([{
+          shipment_id: data.id,
+          status: 'Order Placed',
+          location: 'Processing Center',
+          date: new Date().toISOString().split('T')[0],
+          time: new Date().toTimeString().split(' ')[0],
+        }]);
+
+      setIsCreateDialogOpen(false);
+      loadShipments();
+      
+      setNewShipment({
+        customer_name: '',
+        customer_email: '',
+        origin: '',
+        destination: '',
+        service: 'standard',
+        weight: '',
+        value: '',
+        shipping_fee: 0,
+        delivery_days: 3,
+      });
+
+      toast({
+        title: "Shipment Created",
+        description: `Tracking number: ${trackingNumber}`,
+      });
+    } catch (error) {
+      console.error('Error creating shipment:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateShipmentStatus = () => {
+  const updateShipmentStatus = async () => {
     if (!selectedShipment || !statusUpdateData.status || !statusUpdateData.location) {
       toast({
         title: "Missing Information",
@@ -195,49 +203,99 @@ const AdminPage = () => {
       return;
     }
 
-    const updatedShipments = shipments.map(shipment => {
-      if (shipment.id === selectedShipment.id) {
-        const updatedHistory = [...shipment.statusHistory, {
+    try {
+      setLoading(true);
+
+      // Update shipment status
+      const { error: shipmentError } = await supabase
+        .from('shipments')
+        .update({
+          status: statusUpdateData.status,
+          current_location: statusUpdateData.location,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', selectedShipment.id);
+
+      if (shipmentError) {
+        toast({
+          title: "Error updating shipment",
+          description: shipmentError.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Add tracking history
+      const { error: historyError } = await supabase
+        .from('tracking_history')
+        .insert([{
+          shipment_id: selectedShipment.id,
           status: statusUpdateData.status,
           location: statusUpdateData.location,
-          date: new Date().toLocaleDateString(),
-          time: new Date().toLocaleTimeString(),
-        }];
-        
-        return {
-          ...shipment,
-          status: statusUpdateData.status,
-          currentLocation: statusUpdateData.location,
-          statusHistory: updatedHistory,
-        };
+          date: new Date().toISOString().split('T')[0],
+          time: new Date().toTimeString().split(' ')[0],
+        }]);
+
+      if (historyError) {
+        console.error('Error adding tracking history:', historyError);
       }
-      return shipment;
-    });
-    
-    saveShipments(updatedShipments);
-    setIsEditDialogOpen(false);
-    setStatusUpdateData({ status: '', location: '' });
-    
-    toast({
-      title: "Status Updated",
-      description: `Shipment ${selectedShipment.trackingNumber} updated to ${statusUpdateData.status}`,
-    });
+
+      setIsEditDialogOpen(false);
+      setStatusUpdateData({ status: '', location: '' });
+      loadShipments();
+      
+      toast({
+        title: "Status Updated",
+        description: `Shipment ${selectedShipment.tracking_number} updated to ${statusUpdateData.status}`,
+      });
+    } catch (error) {
+      console.error('Error updating status:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteShipment = (shipmentId: string) => {
-    const updatedShipments = shipments.filter(shipment => shipment.id !== shipmentId);
-    saveShipments(updatedShipments);
-    
-    toast({
-      title: "Shipment Deleted",
-      description: "Shipment has been successfully deleted.",
-    });
+  const deleteShipment = async (shipmentId: string) => {
+    try {
+      setLoading(true);
+      
+      // Delete tracking history first
+      await supabase
+        .from('tracking_history')
+        .delete()
+        .eq('shipment_id', shipmentId);
+
+      // Delete shipment
+      const { error } = await supabase
+        .from('shipments')
+        .delete()
+        .eq('id', shipmentId);
+
+      if (error) {
+        toast({
+          title: "Error deleting shipment",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      loadShipments();
+      toast({
+        title: "Shipment Deleted",
+        description: "Shipment has been successfully deleted.",
+      });
+    } catch (error) {
+      console.error('Error deleting shipment:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredShipments = shipments.filter(shipment =>
-    shipment.trackingNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    shipment.senderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    shipment.receiverName.toLowerCase().includes(searchTerm.toLowerCase())
+    shipment.tracking_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    shipment.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    shipment.destination.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStatusColor = (status: string) => {
@@ -268,7 +326,7 @@ const AdminPage = () => {
           <div className="flex items-center space-x-4">
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button disabled={loading}>
                   <Plus className="h-4 w-4 mr-2" />
                   Create Shipment
                 </Button>
@@ -279,99 +337,41 @@ const AdminPage = () => {
                 </DialogHeader>
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <div>
-                    <Label htmlFor="senderName">Sender Name *</Label>
+                    <Label htmlFor="customer_name">Customer Name *</Label>
                     <Input
-                      id="senderName"
-                      value={newShipment.senderName}
-                      onChange={(e) => setNewShipment({...newShipment, senderName: e.target.value})}
+                      id="customer_name"
+                      value={newShipment.customer_name}
+                      onChange={(e) => setNewShipment({...newShipment, customer_name: e.target.value})}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="senderPhone">Sender Phone</Label>
+                    <Label htmlFor="customer_email">Customer Email</Label>
                     <Input
-                      id="senderPhone"
-                      value={newShipment.senderPhone}
-                      onChange={(e) => setNewShipment({...newShipment, senderPhone: e.target.value})}
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="senderAddress">Sender Address *</Label>
-                    <Textarea
-                      id="senderAddress"
-                      value={newShipment.senderAddress}
-                      onChange={(e) => setNewShipment({...newShipment, senderAddress: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="senderCity">Sender City *</Label>
-                    <Input
-                      id="senderCity"
-                      value={newShipment.senderCity}
-                      onChange={(e) => setNewShipment({...newShipment, senderCity: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="senderEmail">Sender Email</Label>
-                    <Input
-                      id="senderEmail"
+                      id="customer_email"
                       type="email"
-                      value={newShipment.senderEmail}
-                      onChange={(e) => setNewShipment({...newShipment, senderEmail: e.target.value})}
+                      value={newShipment.customer_email}
+                      onChange={(e) => setNewShipment({...newShipment, customer_email: e.target.value})}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="receiverName">Receiver Name *</Label>
+                    <Label htmlFor="origin">Origin *</Label>
                     <Input
-                      id="receiverName"
-                      value={newShipment.receiverName}
-                      onChange={(e) => setNewShipment({...newShipment, receiverName: e.target.value})}
+                      id="origin"
+                      value={newShipment.origin}
+                      onChange={(e) => setNewShipment({...newShipment, origin: e.target.value})}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="receiverPhone">Receiver Phone</Label>
+                    <Label htmlFor="destination">Destination *</Label>
                     <Input
-                      id="receiverPhone"
-                      value={newShipment.receiverPhone}
-                      onChange={(e) => setNewShipment({...newShipment, receiverPhone: e.target.value})}
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="receiverAddress">Receiver Address *</Label>
-                    <Textarea
-                      id="receiverAddress"
-                      value={newShipment.receiverAddress}
-                      onChange={(e) => setNewShipment({...newShipment, receiverAddress: e.target.value})}
+                      id="destination"
+                      value={newShipment.destination}
+                      onChange={(e) => setNewShipment({...newShipment, destination: e.target.value})}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="receiverCity">Receiver City *</Label>
-                    <Input
-                      id="receiverCity"
-                      value={newShipment.receiverCity}
-                      onChange={(e) => setNewShipment({...newShipment, receiverCity: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="receiverEmail">Receiver Email</Label>
-                    <Input
-                      id="receiverEmail"
-                      type="email"
-                      value={newShipment.receiverEmail}
-                      onChange={(e) => setNewShipment({...newShipment, receiverEmail: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="packageWeight">Package Weight (kg) *</Label>
-                    <Input
-                      id="packageWeight"
-                      type="number"
-                      value={newShipment.packageWeight}
-                      onChange={(e) => setNewShipment({...newShipment, packageWeight: parseFloat(e.target.value)})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="serviceType">Service Type</Label>
-                    <Select value={newShipment.serviceType} onValueChange={(value) => setNewShipment({...newShipment, serviceType: value})}>
+                    <Label htmlFor="service">Service Type</Label>
+                    <Select value={newShipment.service} onValueChange={(value) => setNewShipment({...newShipment, service: value})}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -383,43 +383,53 @@ const AdminPage = () => {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="deliveryDays">Delivery Days</Label>
+                    <Label htmlFor="weight">Weight</Label>
                     <Input
-                      id="deliveryDays"
-                      type="number"
-                      min="1"
-                      max="30"
-                      value={newShipment.deliveryDays}
-                      onChange={(e) => setNewShipment({...newShipment, deliveryDays: parseInt(e.target.value)})}
+                      id="weight"
+                      value={newShipment.weight}
+                      onChange={(e) => setNewShipment({...newShipment, weight: e.target.value})}
+                      placeholder="e.g., 2.5kg"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="shippingFee">Shipping Fee ($) *</Label>
+                    <Label htmlFor="value">Package Value</Label>
                     <Input
-                      id="shippingFee"
+                      id="value"
+                      value={newShipment.value}
+                      onChange={(e) => setNewShipment({...newShipment, value: e.target.value})}
+                      placeholder="e.g., $500"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="shipping_fee">Shipping Fee ($) *</Label>
+                    <Input
+                      id="shipping_fee"
                       type="number"
                       step="0.01"
                       min="0"
-                      value={newShipment.shippingFee}
-                      onChange={(e) => setNewShipment({...newShipment, shippingFee: parseFloat(e.target.value)})}
+                      value={newShipment.shipping_fee}
+                      onChange={(e) => setNewShipment({...newShipment, shipping_fee: parseFloat(e.target.value) || 0})}
                       placeholder="Enter custom shipping fee"
                     />
                   </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="packageDescription">Package Description</Label>
-                    <Textarea
-                      id="packageDescription"
-                      value={newShipment.packageDescription}
-                      onChange={(e) => setNewShipment({...newShipment, packageDescription: e.target.value})}
+                  <div>
+                    <Label htmlFor="delivery_days">Delivery Days</Label>
+                    <Input
+                      id="delivery_days"
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={newShipment.delivery_days}
+                      onChange={(e) => setNewShipment({...newShipment, delivery_days: parseInt(e.target.value) || 3})}
                     />
                   </div>
                 </div>
                 <div className="flex justify-end space-x-2 mt-6">
-                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)} disabled={loading}>
                     Cancel
                   </Button>
-                  <Button onClick={createShipment}>
-                    Create Shipment
+                  <Button onClick={createShipment} disabled={loading}>
+                    {loading ? 'Creating...' : 'Create Shipment'}
                   </Button>
                 </div>
               </DialogContent>
@@ -438,7 +448,7 @@ const AdminPage = () => {
             <div className="flex items-center space-x-2">
               <Search className="h-4 w-4" />
               <Input
-                placeholder="Search by tracking number, sender, or receiver..."
+                placeholder="Search by tracking number, customer, or destination..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="max-w-sm"
@@ -446,60 +456,65 @@ const AdminPage = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tracking Number</TableHead>
-                  <TableHead>Sender</TableHead>
-                  <TableHead>Receiver</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Fee</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredShipments.map((shipment) => (
-                  <TableRow key={shipment.id}>
-                    <TableCell className="font-medium">{shipment.trackingNumber}</TableCell>
-                    <TableCell>{shipment.senderName}</TableCell>
-                    <TableCell>{shipment.receiverName}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(shipment.status)}>
-                        {shipment.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{shipment.currentLocation}</TableCell>
-                    <TableCell>${shipment.shippingFee}</TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedShipment(shipment);
-                            setIsEditDialogOpen(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => deleteShipment(shipment.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            {loading ? (
+              <div className="text-center py-8">Loading shipments...</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tracking Number</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Destination</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Fee</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredShipments.map((shipment) => (
+                    <TableRow key={shipment.id}>
+                      <TableCell className="font-medium">{shipment.tracking_number}</TableCell>
+                      <TableCell>{shipment.customer_name}</TableCell>
+                      <TableCell>{shipment.destination}</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(shipment.status)}>
+                          {shipment.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{shipment.current_location}</TableCell>
+                      <TableCell>${shipment.shipping_fee}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedShipment(shipment);
+                              setIsEditDialogOpen(true);
+                            }}
+                            disabled={loading}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteShipment(shipment.id)}
+                            disabled={loading}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 
-        {/* Edit Shipment Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
@@ -509,7 +524,7 @@ const AdminPage = () => {
               <div className="space-y-4">
                 <div>
                   <Label>Tracking Number</Label>
-                  <Input value={selectedShipment.trackingNumber} disabled />
+                  <Input value={selectedShipment.tracking_number} disabled />
                 </div>
                 <div>
                   <Label>Current Status</Label>
@@ -539,23 +554,12 @@ const AdminPage = () => {
                     placeholder="Enter current location"
                   />
                 </div>
-                <div>
-                  <Label>Status History</Label>
-                  <div className="max-h-32 overflow-y-auto border rounded p-2">
-                    {selectedShipment.statusHistory.map((history, index) => (
-                      <div key={index} className="text-sm border-b py-1">
-                        <div className="font-medium">{history.status}</div>
-                        <div className="text-gray-600">{history.location} - {history.date} {history.time}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
                 <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={loading}>
                     Cancel
                   </Button>
-                  <Button onClick={updateShipmentStatus}>
-                    Update Status
+                  <Button onClick={updateShipmentStatus} disabled={loading}>
+                    {loading ? 'Updating...' : 'Update Status'}
                   </Button>
                 </div>
               </div>

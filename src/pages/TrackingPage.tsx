@@ -10,12 +10,14 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Search, Package } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const TrackingPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [trackingNumber, setTrackingNumber] = useState(searchParams.get('number') || '');
   const [currentTracking, setCurrentTracking] = useState<string | null>(null);
   const [shipmentData, setShipmentData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const number = searchParams.get('number');
@@ -25,43 +27,126 @@ const TrackingPage = () => {
     }
   }, [searchParams]);
 
-  // Listen for storage changes to update tracking data in real-time
+  // Set up real-time subscription for shipment updates
   useEffect(() => {
-    const handleStorageChange = () => {
-      if (currentTracking) {
-        handleTrackShipment(currentTracking);
-      }
-    };
+    if (!currentTracking) return;
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    const channel = supabase
+      .channel('shipment-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'shipments',
+          filter: `tracking_number=eq.${currentTracking}`
+        },
+        () => {
+          // Reload shipment data when it changes
+          handleTrackShipment(currentTracking);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'tracking_history'
+        },
+        () => {
+          // Reload shipment data when tracking history is updated
+          handleTrackShipment(currentTracking);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [currentTracking]);
 
-  const handleTrackShipment = (number: string) => {
-    // Get shipment data from localStorage
-    const savedShipments = JSON.parse(localStorage.getItem('shipments') || '[]');
-    const shipment = savedShipments.find((s: any) => s.trackingNumber === number);
-    
-    if (shipment) {
-      // Normalize the shipment data to ensure consistent field names
+  const handleTrackShipment = async (number: string) => {
+    try {
+      setLoading(true);
+      
+      // Get shipment data from Supabase
+      const { data: shipment, error } = await supabase
+        .from('shipments')
+        .select('*')
+        .eq('tracking_number', number)
+        .single();
+
+      if (error) {
+        console.error('Error fetching shipment:', error);
+        setShipmentData(null);
+        setCurrentTracking(null);
+        toast({
+          title: "Shipment not found",
+          description: "Please check your tracking number and try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Get tracking history
+      const { data: history, error: historyError } = await supabase
+        .from('tracking_history')
+        .select('*')
+        .eq('shipment_id', shipment.id)
+        .order('created_at', { ascending: true });
+
+      if (historyError) {
+        console.error('Error fetching tracking history:', historyError);
+      }
+
+      // Normalize the shipment data to match the existing component expectations
       const normalizedShipment = {
-        ...shipment,
-        weight: shipment.weight || shipment.packageWeight,
-        description: shipment.description || shipment.packageDescription,
-        fee: shipment.fee || shipment.shippingFee,
+        id: shipment.id,
+        trackingNumber: shipment.tracking_number,
+        senderName: 'SkyNet Express',
+        senderAddress: shipment.origin,
+        senderCity: shipment.origin,
+        senderPhone: '+1 (565) 310-4849',
+        senderEmail: 'skyexness099@gmail.com',
+        receiverName: shipment.customer_name,
+        receiverAddress: shipment.destination,
+        receiverCity: shipment.destination,
+        receiverPhone: '',
+        receiverEmail: shipment.customer_email,
+        packageWeight: shipment.weight || 'N/A',
+        weight: shipment.weight || 'N/A',
+        packageDescription: shipment.value || 'Package',
+        description: shipment.value || 'Package',
+        serviceType: shipment.service,
+        deliveryDays: shipment.delivery_days || 3,
+        shippingFee: shipment.shipping_fee || 0,
+        fee: shipment.shipping_fee || 0,
+        status: shipment.status,
+        currentLocation: shipment.current_location || 'Processing Center',
+        estimatedDelivery: shipment.estimated_delivery,
+        createdAt: shipment.created_at,
+        statusHistory: history?.map(h => ({
+          status: h.status,
+          location: h.location,
+          date: new Date(h.date).toLocaleDateString(),
+          time: h.time,
+        })) || [],
       };
       
       setShipmentData(normalizedShipment);
       setCurrentTracking(number);
       console.log('Found shipment:', normalizedShipment);
-    } else {
+    } catch (error) {
+      console.error('Error:', error);
       setShipmentData(null);
       setCurrentTracking(null);
       toast({
-        title: "Shipment not found",
-        description: "Please check your tracking number and try again.",
+        title: "Error",
+        description: "An error occurred while tracking the shipment.",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -110,22 +195,34 @@ const TrackingPage = () => {
                     value={trackingNumber}
                     onChange={(e) => setTrackingNumber(e.target.value)}
                     className="pl-10"
+                    disabled={loading}
                   />
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 </div>
-                <Button type="submit">Track</Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? 'Tracking...' : 'Track'}
+                </Button>
               </form>
             </CardContent>
           </Card>
 
-          {currentTracking && shipmentData && (
+          {loading && (
+            <Card>
+              <CardContent className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Tracking your shipment...</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {currentTracking && shipmentData && !loading && (
             <div className="space-y-8">
               <LiveTracker shipmentData={shipmentData} />
               <ShipmentDetails shipmentData={shipmentData} />
             </div>
           )}
 
-          {currentTracking && !shipmentData && (
+          {currentTracking && !shipmentData && !loading && (
             <Card>
               <CardContent className="text-center py-12">
                 <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
