@@ -11,16 +11,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Package, Plus, Edit, Trash2, Search } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface Shipment {
   id: string;
   trackingNumber: string;
   senderName: string;
   senderAddress: string;
+  senderCity: string;
   senderPhone: string;
   senderEmail: string;
   receiverName: string;
   receiverAddress: string;
+  receiverCity: string;
   receiverPhone: string;
   receiverEmail: string;
   packageWeight: number;
@@ -46,20 +49,24 @@ const AdminPage = () => {
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [statusUpdateData, setStatusUpdateData] = useState({ status: '', location: '' });
 
   const [newShipment, setNewShipment] = useState({
     senderName: '',
     senderAddress: '',
+    senderCity: '',
     senderPhone: '',
     senderEmail: '',
     receiverName: '',
     receiverAddress: '',
+    receiverCity: '',
     receiverPhone: '',
     receiverEmail: '',
     packageWeight: 0,
     packageDescription: '',
     serviceType: 'standard',
     deliveryDays: 3,
+    shippingFee: 0,
   });
 
   useEffect(() => {
@@ -82,22 +89,36 @@ const AdminPage = () => {
     return 'SP' + Math.random().toString(36).substr(2, 9).toUpperCase();
   };
 
-  const calculateShippingFee = (weight: number, serviceType: string, days: number) => {
-    const baseRate = serviceType === 'express' ? 25 : serviceType === 'overnight' ? 50 : 15;
-    const weightFee = weight * 2;
-    const urgencyFee = days <= 1 ? 30 : days <= 2 ? 15 : 0;
-    return baseRate + weightFee + urgencyFee;
-  };
-
   const createShipment = () => {
+    if (!newShipment.senderName || !newShipment.receiverName || !newShipment.packageWeight) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const trackingNumber = generateTrackingNumber();
-    const shippingFee = calculateShippingFee(newShipment.packageWeight, newShipment.serviceType, newShipment.deliveryDays);
     
     const shipment: Shipment = {
       id: Date.now().toString(),
       trackingNumber,
-      ...newShipment,
-      shippingFee,
+      senderName: newShipment.senderName,
+      senderAddress: newShipment.senderAddress,
+      senderCity: newShipment.senderCity,
+      senderPhone: newShipment.senderPhone,
+      senderEmail: newShipment.senderEmail,
+      receiverName: newShipment.receiverName,
+      receiverAddress: newShipment.receiverAddress,
+      receiverCity: newShipment.receiverCity,
+      receiverPhone: newShipment.receiverPhone,
+      receiverEmail: newShipment.receiverEmail,
+      packageWeight: newShipment.packageWeight,
+      packageDescription: newShipment.packageDescription,
+      serviceType: newShipment.serviceType,
+      deliveryDays: newShipment.deliveryDays,
+      shippingFee: newShipment.shippingFee,
       status: 'Order Placed',
       currentLocation: 'Processing Center',
       estimatedDelivery: new Date(Date.now() + newShipment.deliveryDays * 24 * 60 * 60 * 1000).toLocaleDateString(),
@@ -113,36 +134,55 @@ const AdminPage = () => {
     const updatedShipments = [...shipments, shipment];
     saveShipments(updatedShipments);
     setIsCreateDialogOpen(false);
+    
+    // Reset form
     setNewShipment({
       senderName: '',
       senderAddress: '',
+      senderCity: '',
       senderPhone: '',
       senderEmail: '',
       receiverName: '',
       receiverAddress: '',
+      receiverCity: '',
       receiverPhone: '',
       receiverEmail: '',
       packageWeight: 0,
       packageDescription: '',
       serviceType: 'standard',
       deliveryDays: 3,
+      shippingFee: 0,
+    });
+
+    toast({
+      title: "Shipment Created",
+      description: `Tracking number: ${trackingNumber}`,
     });
   };
 
-  const updateShipmentStatus = (shipmentId: string, newStatus: string, newLocation: string) => {
+  const updateShipmentStatus = () => {
+    if (!selectedShipment || !statusUpdateData.status || !statusUpdateData.location) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a status and enter a location.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const updatedShipments = shipments.map(shipment => {
-      if (shipment.id === shipmentId) {
+      if (shipment.id === selectedShipment.id) {
         const updatedHistory = [...shipment.statusHistory, {
-          status: newStatus,
-          location: newLocation,
+          status: statusUpdateData.status,
+          location: statusUpdateData.location,
           date: new Date().toLocaleDateString(),
           time: new Date().toLocaleTimeString(),
         }];
         
         return {
           ...shipment,
-          status: newStatus,
-          currentLocation: newLocation,
+          status: statusUpdateData.status,
+          currentLocation: statusUpdateData.location,
           statusHistory: updatedHistory,
         };
       }
@@ -150,11 +190,23 @@ const AdminPage = () => {
     });
     
     saveShipments(updatedShipments);
+    setIsEditDialogOpen(false);
+    setStatusUpdateData({ status: '', location: '' });
+    
+    toast({
+      title: "Status Updated",
+      description: `Shipment ${selectedShipment.trackingNumber} updated to ${statusUpdateData.status}`,
+    });
   };
 
   const deleteShipment = (shipmentId: string) => {
     const updatedShipments = shipments.filter(shipment => shipment.id !== shipmentId);
     saveShipments(updatedShipments);
+    
+    toast({
+      title: "Shipment Deleted",
+      description: "Shipment has been successfully deleted.",
+    });
   };
 
   const filteredShipments = shipments.filter(shipment =>
@@ -197,7 +249,7 @@ const AdminPage = () => {
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <div>
-                  <Label htmlFor="senderName">Sender Name</Label>
+                  <Label htmlFor="senderName">Sender Name *</Label>
                   <Input
                     id="senderName"
                     value={newShipment.senderName}
@@ -213,11 +265,19 @@ const AdminPage = () => {
                   />
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="senderAddress">Sender Address</Label>
+                  <Label htmlFor="senderAddress">Sender Address *</Label>
                   <Textarea
                     id="senderAddress"
                     value={newShipment.senderAddress}
                     onChange={(e) => setNewShipment({...newShipment, senderAddress: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="senderCity">Sender City *</Label>
+                  <Input
+                    id="senderCity"
+                    value={newShipment.senderCity}
+                    onChange={(e) => setNewShipment({...newShipment, senderCity: e.target.value})}
                   />
                 </div>
                 <div>
@@ -230,7 +290,7 @@ const AdminPage = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="receiverName">Receiver Name</Label>
+                  <Label htmlFor="receiverName">Receiver Name *</Label>
                   <Input
                     id="receiverName"
                     value={newShipment.receiverName}
@@ -246,11 +306,19 @@ const AdminPage = () => {
                   />
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="receiverAddress">Receiver Address</Label>
+                  <Label htmlFor="receiverAddress">Receiver Address *</Label>
                   <Textarea
                     id="receiverAddress"
                     value={newShipment.receiverAddress}
                     onChange={(e) => setNewShipment({...newShipment, receiverAddress: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="receiverCity">Receiver City *</Label>
+                  <Input
+                    id="receiverCity"
+                    value={newShipment.receiverCity}
+                    onChange={(e) => setNewShipment({...newShipment, receiverCity: e.target.value})}
                   />
                 </div>
                 <div>
@@ -263,7 +331,7 @@ const AdminPage = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="packageWeight">Package Weight (kg)</Label>
+                  <Label htmlFor="packageWeight">Package Weight (kg) *</Label>
                   <Input
                     id="packageWeight"
                     type="number"
@@ -295,6 +363,17 @@ const AdminPage = () => {
                     onChange={(e) => setNewShipment({...newShipment, deliveryDays: parseInt(e.target.value)})}
                   />
                 </div>
+                <div>
+                  <Label htmlFor="shippingFee">Shipping Fee ($) *</Label>
+                  <Input
+                    id="shippingFee"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={newShipment.shippingFee}
+                    onChange={(e) => setNewShipment({...newShipment, shippingFee: parseFloat(e.target.value)})}
+                  />
+                </div>
                 <div className="col-span-2">
                   <Label htmlFor="packageDescription">Package Description</Label>
                   <Textarea
@@ -302,11 +381,6 @@ const AdminPage = () => {
                     value={newShipment.packageDescription}
                     onChange={(e) => setNewShipment({...newShipment, packageDescription: e.target.value})}
                   />
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-gray-600">
-                    Estimated Shipping Fee: ${calculateShippingFee(newShipment.packageWeight, newShipment.serviceType, newShipment.deliveryDays)}
-                  </p>
                 </div>
               </div>
               <div className="flex justify-end space-x-2 mt-6">
@@ -401,14 +475,12 @@ const AdminPage = () => {
                   <Input value={selectedShipment.trackingNumber} disabled />
                 </div>
                 <div>
-                  <Label>Update Status</Label>
-                  <Select onValueChange={(value) => {
-                    const location = prompt("Enter current location:");
-                    if (location) {
-                      updateShipmentStatus(selectedShipment.id, value, location);
-                      setIsEditDialogOpen(false);
-                    }
-                  }}>
+                  <Label>Current Status</Label>
+                  <Input value={selectedShipment.status} disabled />
+                </div>
+                <div>
+                  <Label>New Status</Label>
+                  <Select value={statusUpdateData.status} onValueChange={(value) => setStatusUpdateData({...statusUpdateData, status: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select new status" />
                     </SelectTrigger>
@@ -423,6 +495,14 @@ const AdminPage = () => {
                   </Select>
                 </div>
                 <div>
+                  <Label>Current Location</Label>
+                  <Input
+                    value={statusUpdateData.location}
+                    onChange={(e) => setStatusUpdateData({...statusUpdateData, location: e.target.value})}
+                    placeholder="Enter current location"
+                  />
+                </div>
+                <div>
                   <Label>Status History</Label>
                   <div className="max-h-32 overflow-y-auto border rounded p-2">
                     {selectedShipment.statusHistory.map((history, index) => (
@@ -432,6 +512,14 @@ const AdminPage = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={updateShipmentStatus}>
+                    Update Status
+                  </Button>
                 </div>
               </div>
             )}

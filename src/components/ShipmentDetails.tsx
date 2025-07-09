@@ -52,7 +52,7 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentData }) => {
               <Weight className="w-5 h-5 text-blue-600 mr-2" />
               <div>
                 <p className="text-sm text-gray-600">Weight</p>
-                <p className="font-semibold">{shipmentData.weight} kg</p>
+                <p className="font-semibold">{shipmentData.weight || shipmentData.packageWeight} kg</p>
               </div>
             </div>
 
@@ -70,7 +70,7 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentData }) => {
               <DollarSign className="w-5 h-5 text-purple-600 mr-2" />
               <div>
                 <p className="text-sm text-gray-600">Shipping Fee</p>
-                <p className="font-semibold">${shipmentData.fee}</p>
+                <p className="font-semibold">${shipmentData.fee || shipmentData.shippingFee}</p>
               </div>
             </div>
 

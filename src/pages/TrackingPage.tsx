@@ -31,9 +31,17 @@ const TrackingPage = () => {
     const shipment = savedShipments.find((s: any) => s.trackingNumber === number);
     
     if (shipment) {
-      setShipmentData(shipment);
+      // Normalize the shipment data to ensure consistent field names
+      const normalizedShipment = {
+        ...shipment,
+        weight: shipment.weight || shipment.packageWeight,
+        description: shipment.description || shipment.packageDescription,
+        fee: shipment.fee || shipment.shippingFee,
+      };
+      
+      setShipmentData(normalizedShipment);
       setCurrentTracking(number);
-      console.log('Found shipment:', shipment);
+      console.log('Found shipment:', normalizedShipment);
     } else {
       setShipmentData(null);
       setCurrentTracking(null);
