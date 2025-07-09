@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
+import AdminLogin from '../components/AdminLogin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,8 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Package, Plus, Edit, Trash2, Search } from 'lucide-react';
+import { Package, Plus, Edit, Trash2, Search, LogOut } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface Shipment {
@@ -44,6 +43,7 @@ interface Shipment {
 }
 
 const AdminPage = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
@@ -70,7 +70,13 @@ const AdminPage = () => {
   });
 
   useEffect(() => {
-    loadShipments();
+    // Check if admin is already authenticated
+    const isAuth = localStorage.getItem('adminAuthenticated') === 'true';
+    setIsAuthenticated(isAuth);
+    
+    if (isAuth) {
+      loadShipments();
+    }
   }, []);
 
   const loadShipments = () => {
@@ -83,17 +89,36 @@ const AdminPage = () => {
   const saveShipments = (updatedShipments: Shipment[]) => {
     localStorage.setItem('shipments', JSON.stringify(updatedShipments));
     setShipments(updatedShipments);
+    
+    // Trigger a storage event to notify other components
+    window.dispatchEvent(new Event('storage'));
+  };
+
+  const handleLogin = (success: boolean) => {
+    if (success) {
+      setIsAuthenticated(true);
+      loadShipments();
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminAuthenticated');
+    setIsAuthenticated(false);
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out.",
+    });
   };
 
   const generateTrackingNumber = () => {
-    return 'SP' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    return 'SN' + Math.random().toString(36).substr(2, 9).toUpperCase();
   };
 
   const createShipment = () => {
-    if (!newShipment.senderName || !newShipment.receiverName || !newShipment.packageWeight) {
+    if (!newShipment.senderName || !newShipment.receiverName || !newShipment.packageWeight || !newShipment.shippingFee) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields.",
+        description: "Please fill in all required fields including shipping fee.",
         variant: "destructive"
       });
       return;
@@ -227,172 +252,184 @@ const AdminPage = () => {
     }
   };
 
+  if (!isAuthenticated) {
+    return <AdminLogin onLogin={handleLogin} />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-3">
             <Package className="h-8 w-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-900">SwiftPath Admin Panel</h1>
+            <h1 className="text-3xl font-bold text-gray-900">SkyNet Express Admin Panel</h1>
           </div>
           
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Shipment
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Create New Shipment</DialogTitle>
-              </DialogHeader>
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div>
-                  <Label htmlFor="senderName">Sender Name *</Label>
-                  <Input
-                    id="senderName"
-                    value={newShipment.senderName}
-                    onChange={(e) => setNewShipment({...newShipment, senderName: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="senderPhone">Sender Phone</Label>
-                  <Input
-                    id="senderPhone"
-                    value={newShipment.senderPhone}
-                    onChange={(e) => setNewShipment({...newShipment, senderPhone: e.target.value})}
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Label htmlFor="senderAddress">Sender Address *</Label>
-                  <Textarea
-                    id="senderAddress"
-                    value={newShipment.senderAddress}
-                    onChange={(e) => setNewShipment({...newShipment, senderAddress: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="senderCity">Sender City *</Label>
-                  <Input
-                    id="senderCity"
-                    value={newShipment.senderCity}
-                    onChange={(e) => setNewShipment({...newShipment, senderCity: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="senderEmail">Sender Email</Label>
-                  <Input
-                    id="senderEmail"
-                    type="email"
-                    value={newShipment.senderEmail}
-                    onChange={(e) => setNewShipment({...newShipment, senderEmail: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="receiverName">Receiver Name *</Label>
-                  <Input
-                    id="receiverName"
-                    value={newShipment.receiverName}
-                    onChange={(e) => setNewShipment({...newShipment, receiverName: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="receiverPhone">Receiver Phone</Label>
-                  <Input
-                    id="receiverPhone"
-                    value={newShipment.receiverPhone}
-                    onChange={(e) => setNewShipment({...newShipment, receiverPhone: e.target.value})}
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Label htmlFor="receiverAddress">Receiver Address *</Label>
-                  <Textarea
-                    id="receiverAddress"
-                    value={newShipment.receiverAddress}
-                    onChange={(e) => setNewShipment({...newShipment, receiverAddress: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="receiverCity">Receiver City *</Label>
-                  <Input
-                    id="receiverCity"
-                    value={newShipment.receiverCity}
-                    onChange={(e) => setNewShipment({...newShipment, receiverCity: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="receiverEmail">Receiver Email</Label>
-                  <Input
-                    id="receiverEmail"
-                    type="email"
-                    value={newShipment.receiverEmail}
-                    onChange={(e) => setNewShipment({...newShipment, receiverEmail: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="packageWeight">Package Weight (kg) *</Label>
-                  <Input
-                    id="packageWeight"
-                    type="number"
-                    value={newShipment.packageWeight}
-                    onChange={(e) => setNewShipment({...newShipment, packageWeight: parseFloat(e.target.value)})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="serviceType">Service Type</Label>
-                  <Select value={newShipment.serviceType} onValueChange={(value) => setNewShipment({...newShipment, serviceType: value})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="standard">Standard</SelectItem>
-                      <SelectItem value="express">Express</SelectItem>
-                      <SelectItem value="overnight">Overnight</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="deliveryDays">Delivery Days</Label>
-                  <Input
-                    id="deliveryDays"
-                    type="number"
-                    min="1"
-                    max="30"
-                    value={newShipment.deliveryDays}
-                    onChange={(e) => setNewShipment({...newShipment, deliveryDays: parseInt(e.target.value)})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="shippingFee">Shipping Fee ($) *</Label>
-                  <Input
-                    id="shippingFee"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={newShipment.shippingFee}
-                    onChange={(e) => setNewShipment({...newShipment, shippingFee: parseFloat(e.target.value)})}
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Label htmlFor="packageDescription">Package Description</Label>
-                  <Textarea
-                    id="packageDescription"
-                    value={newShipment.packageDescription}
-                    onChange={(e) => setNewShipment({...newShipment, packageDescription: e.target.value})}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end space-x-2 mt-6">
-                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={createShipment}>
+          <div className="flex items-center space-x-4">
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
                   Create Shipment
                 </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Create New Shipment</DialogTitle>
+                </DialogHeader>
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <Label htmlFor="senderName">Sender Name *</Label>
+                    <Input
+                      id="senderName"
+                      value={newShipment.senderName}
+                      onChange={(e) => setNewShipment({...newShipment, senderName: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="senderPhone">Sender Phone</Label>
+                    <Input
+                      id="senderPhone"
+                      value={newShipment.senderPhone}
+                      onChange={(e) => setNewShipment({...newShipment, senderPhone: e.target.value})}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="senderAddress">Sender Address *</Label>
+                    <Textarea
+                      id="senderAddress"
+                      value={newShipment.senderAddress}
+                      onChange={(e) => setNewShipment({...newShipment, senderAddress: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="senderCity">Sender City *</Label>
+                    <Input
+                      id="senderCity"
+                      value={newShipment.senderCity}
+                      onChange={(e) => setNewShipment({...newShipment, senderCity: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="senderEmail">Sender Email</Label>
+                    <Input
+                      id="senderEmail"
+                      type="email"
+                      value={newShipment.senderEmail}
+                      onChange={(e) => setNewShipment({...newShipment, senderEmail: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="receiverName">Receiver Name *</Label>
+                    <Input
+                      id="receiverName"
+                      value={newShipment.receiverName}
+                      onChange={(e) => setNewShipment({...newShipment, receiverName: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="receiverPhone">Receiver Phone</Label>
+                    <Input
+                      id="receiverPhone"
+                      value={newShipment.receiverPhone}
+                      onChange={(e) => setNewShipment({...newShipment, receiverPhone: e.target.value})}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="receiverAddress">Receiver Address *</Label>
+                    <Textarea
+                      id="receiverAddress"
+                      value={newShipment.receiverAddress}
+                      onChange={(e) => setNewShipment({...newShipment, receiverAddress: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="receiverCity">Receiver City *</Label>
+                    <Input
+                      id="receiverCity"
+                      value={newShipment.receiverCity}
+                      onChange={(e) => setNewShipment({...newShipment, receiverCity: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="receiverEmail">Receiver Email</Label>
+                    <Input
+                      id="receiverEmail"
+                      type="email"
+                      value={newShipment.receiverEmail}
+                      onChange={(e) => setNewShipment({...newShipment, receiverEmail: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="packageWeight">Package Weight (kg) *</Label>
+                    <Input
+                      id="packageWeight"
+                      type="number"
+                      value={newShipment.packageWeight}
+                      onChange={(e) => setNewShipment({...newShipment, packageWeight: parseFloat(e.target.value)})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="serviceType">Service Type</Label>
+                    <Select value={newShipment.serviceType} onValueChange={(value) => setNewShipment({...newShipment, serviceType: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="standard">Standard</SelectItem>
+                        <SelectItem value="express">Express</SelectItem>
+                        <SelectItem value="overnight">Overnight</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="deliveryDays">Delivery Days</Label>
+                    <Input
+                      id="deliveryDays"
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={newShipment.deliveryDays}
+                      onChange={(e) => setNewShipment({...newShipment, deliveryDays: parseInt(e.target.value)})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="shippingFee">Shipping Fee ($) *</Label>
+                    <Input
+                      id="shippingFee"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={newShipment.shippingFee}
+                      onChange={(e) => setNewShipment({...newShipment, shippingFee: parseFloat(e.target.value)})}
+                      placeholder="Enter custom shipping fee"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="packageDescription">Package Description</Label>
+                    <Textarea
+                      id="packageDescription"
+                      value={newShipment.packageDescription}
+                      onChange={(e) => setNewShipment({...newShipment, packageDescription: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-2 mt-6">
+                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={createShipment}>
+                    Create Shipment
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
 
         <Card>

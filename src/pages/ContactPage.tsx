@@ -86,7 +86,7 @@ const ContactPage = () => {
                   <p className="text-gray-600 mb-4">
                     Call us for immediate assistance with your shipments
                   </p>
-                  <p className="text-2xl font-bold text-blue-600">+1 (555) 123-4567</p>
+                  <p className="text-2xl font-bold text-blue-600">+1 (565) 310-4849</p>
                   <p className="text-sm text-gray-500 mt-2">
                     Available 24/7 for urgent shipments
                   </p>
@@ -104,7 +104,7 @@ const ContactPage = () => {
                   <p className="text-gray-600 mb-4">
                     Send us an email for detailed inquiries
                   </p>
-                  <p className="text-lg font-semibold text-green-600">contact@swiftpathdelivery.org</p>
+                  <p className="text-lg font-semibold text-green-600">skyexness099@gmail.com</p>
                   <p className="text-sm text-gray-500 mt-2">
                     Response within 2 hours during business hours
                   </p>
@@ -141,19 +141,19 @@ const ContactPage = () => {
                 <CardContent>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Monday - Friday:</span>
-                      <span className="font-semibold">8:00 AM - 6:00 PM</span>
+                      <span className="text-gray-600">Monday:</span>
+                      <span className="font-semibold">Always Online</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Saturday:</span>
-                      <span className="font-semibold">9:00 AM - 4:00 PM</span>
+                      <span className="font-semibold">Always Online</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Sunday:</span>
-                      <span className="font-semibold">Closed</span>
+                      <span className="font-semibold">Always Online</span>
                     </div>
                     <p className="text-sm text-orange-600 mt-4">
-                      Emergency support available 24/7
+                      24/7 support available for all customers
                     </p>
                   </div>
                 </CardContent>

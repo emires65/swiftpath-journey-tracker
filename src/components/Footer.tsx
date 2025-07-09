@@ -13,7 +13,7 @@ const Footer = () => {
             <div className="flex items-center space-x-2 mb-6">
               <Truck className="w-8 h-8 text-blue-400" />
               <div>
-                <h3 className="text-2xl font-bold">SwiftPath</h3>
+                <h3 className="text-2xl font-bold">SkyNet Express</h3>
                 <p className="text-sm text-gray-400">Delivery Solutions</p>
               </div>
             </div>
@@ -46,11 +46,6 @@ const Footer = () => {
               <li>
                 <Link to="/tracking" className="text-gray-400 hover:text-white transition-colors">
                   Track Shipment
-                </Link>
-              </li>
-              <li>
-                <Link to="/create-shipment" className="text-gray-400 hover:text-white transition-colors">
-                  Ship Now
                 </Link>
               </li>
               <li>
@@ -88,20 +83,20 @@ const Footer = () => {
               
               <div className="flex items-center">
                 <Phone className="w-5 h-5 text-blue-400 mr-3" />
-                <p className="text-gray-400">+1 (555) 123-4567</p>
+                <p className="text-gray-400">+1 (565) 310-4849</p>
               </div>
               
               <div className="flex items-center">
                 <Mail className="w-5 h-5 text-blue-400 mr-3" />
-                <p className="text-gray-400">contact@swiftpathdelivery.org</p>
+                <p className="text-gray-400">skyexness099@gmail.com</p>
               </div>
               
               <div className="flex items-start">
                 <Clock className="w-5 h-5 text-blue-400 mr-3 mt-1" />
                 <div className="text-gray-400">
-                  <p>Mon-Fri: 8AM-6PM</p>
-                  <p>Sat: 9AM-4PM</p>
-                  <p>Sun: Closed</p>
+                  <p>Mon: Always Online</p>
+                  <p>Sat: Always Online</p>
+                  <p>Sun: Always Online</p>
                 </div>
               </div>
             </div>
@@ -111,7 +106,7 @@ const Footer = () => {
         <div className="border-t border-gray-800 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 mb-4 md:mb-0">
-              © 2024 SwiftPath Delivery Solutions. All rights reserved.
+              © 2024 SkyNet Express Delivery Solutions. All rights reserved.
             </p>
             <div className="flex space-x-6">
               <Link to="#" className="text-gray-400 hover:text-white transition-colors">

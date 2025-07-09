@@ -25,6 +25,18 @@ const TrackingPage = () => {
     }
   }, [searchParams]);
 
+  // Listen for storage changes to update tracking data in real-time
+  useEffect(() => {
+    const handleStorageChange = () => {
+      if (currentTracking) {
+        handleTrackShipment(currentTracking);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [currentTracking]);
+
   const handleTrackShipment = (number: string) => {
     // Get shipment data from localStorage
     const savedShipments = JSON.parse(localStorage.getItem('shipments') || '[]');
@@ -94,7 +106,7 @@ const TrackingPage = () => {
                 <div className="flex-1 relative">
                   <Input
                     type="text"
-                    placeholder="Enter tracking number (e.g., SP123456789)"
+                    placeholder="Enter tracking number (e.g., SN123456789)"
                     value={trackingNumber}
                     onChange={(e) => setTrackingNumber(e.target.value)}
                     className="pl-10"
