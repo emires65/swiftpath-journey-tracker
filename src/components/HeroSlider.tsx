@@ -1,36 +1,28 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, ArrowRight, Truck, Plane, Ship } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const slides = [
   {
     id: 1,
-    title: "Global Shipping Solutions",
-    subtitle: "Reliable delivery worldwide",
-    description: "Experience seamless logistics with our comprehensive shipping services across 200+ countries.",
-    image: "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-    icon: Truck,
-    cta: "Get Started"
+    title: "Fast & Reliable Shipping",
+    subtitle: "Your packages delivered with care and precision",
+    image: "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=1920&q=80",
+    gradient: "from-blue-600 to-purple-600"
   },
   {
     id: 2,
-    title: "Air Freight Express",
-    subtitle: "Fast & efficient air cargo",
-    description: "Expedite your shipments with our premium air freight services for time-sensitive deliveries.",
-    image: "https://images.unsplash.com/photo-1474302770737-173ee21bab63?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-    icon: Plane,
-    cta: "Track Now"
+    title: "Global Express Delivery",
+    subtitle: "Connecting continents with speed and security",
+    image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?auto=format&fit=crop&w=1920&q=80",
+    gradient: "from-green-600 to-blue-600"
   },
   {
     id: 3,
-    title: "Ocean Freight",
-    subtitle: "Cost-effective sea transport",
-    description: "Maximize your savings with our reliable ocean freight solutions for large volume shipments.",
-    image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-    icon: Ship,
-    cta: "Learn More"
+    title: "Track Every Step",
+    subtitle: "Real-time updates for complete peace of mind",
+    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1920&q=80",
+    gradient: "from-orange-600 to-red-600"
   }
 ];
 
@@ -41,7 +33,6 @@ const HeroSlider = () => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 5000);
-
     return () => clearInterval(timer);
   }, []);
 
@@ -54,92 +45,63 @@ const HeroSlider = () => {
   };
 
   return (
-    <section className="relative h-screen overflow-hidden">
-      {slides.map((slide, index) => {
-        const Icon = slide.icon;
-        return (
-          <div
-            key={slide.id}
-            className={`absolute inset-0 transition-transform duration-700 ease-in-out ${
-              index === currentSlide ? 'translate-x-0' : 
-              index < currentSlide ? '-translate-x-full' : 'translate-x-full'
-            }`}
-          >
-            <div 
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-              style={{ backgroundImage: `url(${slide.image})` }}
-            >
-              <div className="absolute inset-0 bg-black/50" />
-            </div>
-            
-            <div className="relative z-10 h-full flex items-center">
-              <div className="container mx-auto px-4">
-                <div className="max-w-3xl text-white">
-                  <div className="flex items-center mb-4 animate-fade-in">
-                    <Icon className="w-12 h-12 text-blue-400 mr-4" />
-                    <span className="text-xl font-semibold text-blue-400">{slide.subtitle}</span>
-                  </div>
-                  
-                  <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight animate-fade-in">
-                    {slide.title}
-                  </h1>
-                  
-                  <p className="text-xl md:text-2xl mb-8 text-gray-200 animate-fade-in">
-                    {slide.description}
-                  </p>
-                  
-                  <div className="flex flex-col sm:flex-row gap-4 animate-fade-in">
-                    <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-3" asChild>
-                      <Link to="/create-shipment">
-                        {slide.cta}
-                        <ArrowRight className="ml-2 w-5 h-5" />
-                      </Link>
-                    </Button>
-                    
-                    <Button 
-                      size="lg" 
-                      variant="outline" 
-                      className="border-white text-white hover:bg-white hover:text-black text-lg px-8 py-3"
-                      asChild
-                    >
-                      <Link to="/tracking">Track Shipment</Link>
-                    </Button>
-                  </div>
-                </div>
+    <div className="relative h-screen overflow-hidden">
+      {slides.map((slide, index) => (
+        <div
+          key={slide.id}
+          className={`absolute inset-0 transition-transform duration-700 ease-in-out ${
+            index === currentSlide ? 'translate-x-0' : 
+            index < currentSlide ? '-translate-x-full' : 'translate-x-full'
+          }`}
+        >
+          <div className="relative h-full">
+            <img
+              src={slide.image}
+              alt={slide.title}
+              className="w-full h-full object-cover"
+            />
+            <div className={`absolute inset-0 bg-gradient-to-r ${slide.gradient} opacity-75`} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-white px-4 max-w-4xl mx-auto">
+                <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in">
+                  {slide.title}
+                </h1>
+                <p className="text-xl md:text-2xl mb-8 animate-fade-in animation-delay-300">
+                  {slide.subtitle}
+                </p>
               </div>
             </div>
           </div>
-        );
-      })}
+        </div>
+      ))}
 
-      {/* Navigation Arrows */}
+      {/* Navigation arrows */}
       <button
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full p-3 transition-all"
+        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-colors duration-200 backdrop-blur-sm"
       >
-        <ChevronLeft className="w-6 h-6 text-white" />
+        <ChevronLeft className="w-6 h-6" />
       </button>
-      
       <button
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full p-3 transition-all"
+        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-colors duration-200 backdrop-blur-sm"
       >
-        <ChevronRight className="w-6 h-6 text-white" />
+        <ChevronRight className="w-6 h-6" />
       </button>
 
-      {/* Dots Indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex space-x-3">
+      {/* Slide indicators */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex space-x-2">
         {slides.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrentSlide(index)}
-            className={`w-3 h-3 rounded-full transition-all ${
-              index === currentSlide ? 'bg-white scale-125' : 'bg-white/50'
+            className={`w-3 h-3 rounded-full transition-colors duration-200 ${
+              index === currentSlide ? 'bg-white' : 'bg-white/50'
             }`}
           />
         ))}
       </div>
-    </section>
+    </div>
   );
 };
 

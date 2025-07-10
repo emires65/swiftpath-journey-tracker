@@ -61,12 +61,15 @@ const AdminPage = () => {
     destination: '',
     sender_name: '',
     sender_country: '',
+    sender_address: '',
     receiver_country: '',
+    receiver_address: '',
     service: 'standard',
     weight: '',
     value: '',
     shipping_fee: 0,
     delivery_days: 3,
+    currency: 'USD',
   });
 
   useEffect(() => {
@@ -247,12 +250,15 @@ const AdminPage = () => {
         destination: '',
         sender_name: '',
         sender_country: '',
+        sender_address: '',
         receiver_country: '',
+        receiver_address: '',
         service: 'standard',
         weight: '',
         value: '',
         shipping_fee: 0,
         delivery_days: 3,
+        currency: 'USD',
       });
 
       toast({
@@ -418,7 +424,7 @@ const AdminPage = () => {
                   Create Shipment
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create New Shipment</DialogTitle>
                 </DialogHeader>
@@ -439,6 +445,15 @@ const AdminPage = () => {
                       onChange={(e) => setNewShipment({...newShipment, sender_country: e.target.value})}
                     />
                   </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="sender_address">Sender Address</Label>
+                    <Input
+                      id="sender_address"
+                      value={newShipment.sender_address}
+                      onChange={(e) => setNewShipment({...newShipment, sender_address: e.target.value})}
+                      placeholder="Enter sender's full address"
+                    />
+                  </div>
                   <div>
                     <Label htmlFor="customer_name">Receiver Name *</Label>
                     <Input
@@ -453,6 +468,15 @@ const AdminPage = () => {
                       id="receiver_country"
                       value={newShipment.receiver_country}
                       onChange={(e) => setNewShipment({...newShipment, receiver_country: e.target.value})}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="receiver_address">Receiver Address</Label>
+                    <Input
+                      id="receiver_address"
+                      value={newShipment.receiver_address}
+                      onChange={(e) => setNewShipment({...newShipment, receiver_address: e.target.value})}
+                      placeholder="Enter receiver's full address"
                     />
                   </div>
                   <div>
@@ -508,11 +532,31 @@ const AdminPage = () => {
                       id="value"
                       value={newShipment.value}
                       onChange={(e) => setNewShipment({...newShipment, value: e.target.value})}
-                      placeholder="e.g., $500"
+                      placeholder="e.g., 500"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="shipping_fee">Custom Shipping Fee ($) *</Label>
+                    <Label htmlFor="currency">Currency</Label>
+                    <Select value={newShipment.currency} onValueChange={(value) => setNewShipment({...newShipment, currency: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD ($)</SelectItem>
+                        <SelectItem value="EUR">EUR (€)</SelectItem>
+                        <SelectItem value="GBP">GBP (£)</SelectItem>
+                        <SelectItem value="JPY">JPY (¥)</SelectItem>
+                        <SelectItem value="CAD">CAD (C$)</SelectItem>
+                        <SelectItem value="AUD">AUD (A$)</SelectItem>
+                        <SelectItem value="CHF">CHF (Fr)</SelectItem>
+                        <SelectItem value="CNY">CNY (¥)</SelectItem>
+                        <SelectItem value="INR">INR (₹)</SelectItem>
+                        <SelectItem value="BRL">BRL (R$)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="shipping_fee">Shipping Fee ({newShipment.currency}) *</Label>
                     <Input
                       id="shipping_fee"
                       type="number"
@@ -520,7 +564,7 @@ const AdminPage = () => {
                       min="0"
                       value={newShipment.shipping_fee}
                       onChange={(e) => setNewShipment({...newShipment, shipping_fee: parseFloat(e.target.value) || 0})}
-                      placeholder="Enter custom shipping fee"
+                      placeholder="Enter shipping fee"
                     />
                   </div>
                   <div>
