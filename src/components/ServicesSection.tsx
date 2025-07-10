@@ -99,7 +99,7 @@ const ServicesSection = () => {
                   </ul>
                   
                   <Button variant="outline" className="w-full group-hover:bg-blue-600 group-hover:text-white transition-all" asChild>
-                    <Link to="/services">Learn More</Link>
+                    <Link to="/contact">Contact Support</Link>
                   </Button>
                 </CardContent>
               </Card>

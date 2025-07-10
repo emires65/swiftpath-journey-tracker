@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Package, Plus, Edit, Trash2, Search, LogOut } from 'lucide-react';
+import { Package, Plus, Edit, Trash2, Search, LogOut, Bell, Copy, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -21,6 +21,9 @@ interface Shipment {
   customer_email: string;
   origin: string;
   destination: string;
+  sender_name: string;
+  sender_country: string;
+  receiver_country: string;
   service: string;
   status: string;
   weight?: string;
@@ -33,21 +36,33 @@ interface Shipment {
   updated_at: string;
 }
 
+interface TrackingNotification {
+  id: string;
+  tracking_number: string;
+  tracked_at: string;
+  user_ip?: string;
+}
+
 const AdminPage = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [trackingNotifications, setTrackingNotifications] = useState<TrackingNotification[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [statusUpdateData, setStatusUpdateData] = useState({ status: '', location: '' });
   const [loading, setLoading] = useState(false);
+  const [newTrackingLink, setNewTrackingLink] = useState('');
 
   const [newShipment, setNewShipment] = useState({
     customer_name: '',
     customer_email: '',
     origin: '',
     destination: '',
+    sender_name: '',
+    sender_country: '',
+    receiver_country: '',
     service: 'standard',
     weight: '',
     value: '',
@@ -61,8 +76,36 @@ const AdminPage = () => {
     
     if (isAuth) {
       loadShipments();
+      loadTrackingNotifications();
+      setupTrackingNotificationsListener();
     }
   }, []);
+
+  const setupTrackingNotificationsListener = () => {
+    const channel = supabase
+      .channel('tracking-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'tracking_notifications'
+        },
+        (payload) => {
+          console.log('New tracking notification:', payload);
+          loadTrackingNotifications();
+          toast({
+            title: "New Tracking Activity",
+            description: `Someone tracked: ${payload.new.tracking_number}`,
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
 
   const loadShipments = async () => {
     try {
@@ -90,10 +133,31 @@ const AdminPage = () => {
     }
   };
 
+  const loadTrackingNotifications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tracking_notifications')
+        .select('*')
+        .order('tracked_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error('Error loading tracking notifications:', error);
+        return;
+      }
+
+      setTrackingNotifications(data || []);
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
   const handleLogin = (success: boolean) => {
     if (success) {
       setIsAuthenticated(true);
       loadShipments();
+      loadTrackingNotifications();
+      setupTrackingNotificationsListener();
     }
   };
 
@@ -111,10 +175,10 @@ const AdminPage = () => {
   };
 
   const createShipment = async () => {
-    if (!newShipment.customer_name || !newShipment.destination || !newShipment.shipping_fee) {
+    if (!newShipment.customer_name || !newShipment.destination || !newShipment.shipping_fee || !newShipment.sender_name || !newShipment.sender_country || !newShipment.receiver_country) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields including shipping fee.",
+        description: "Please fill in all required fields including sender and receiver countries.",
         variant: "destructive"
       });
       return;
@@ -135,6 +199,9 @@ const AdminPage = () => {
           customer_email: newShipment.customer_email,
           origin: newShipment.origin,
           destination: newShipment.destination,
+          sender_name: newShipment.sender_name,
+          sender_country: newShipment.sender_country,
+          receiver_country: newShipment.receiver_country,
           service: newShipment.service,
           status: 'Order Placed',
           weight: newShipment.weight,
@@ -167,6 +234,10 @@ const AdminPage = () => {
           time: new Date().toTimeString().split(' ')[0],
         }]);
 
+      // Generate tracking link
+      const trackingLink = `${window.location.origin}/tracking?number=${trackingNumber}`;
+      setNewTrackingLink(trackingLink);
+
       setIsCreateDialogOpen(false);
       loadShipments();
       
@@ -175,6 +246,9 @@ const AdminPage = () => {
         customer_email: '',
         origin: '',
         destination: '',
+        sender_name: '',
+        sender_country: '',
+        receiver_country: '',
         service: 'standard',
         weight: '',
         value: '',
@@ -292,10 +366,24 @@ const AdminPage = () => {
     }
   };
 
+  const copyTrackingLink = (trackingNumber: string) => {
+    const link = `${window.location.origin}/tracking?number=${trackingNumber}`;
+    navigator.clipboard.writeText(link);
+    toast({
+      title: "Link Copied",
+      description: "Tracking link copied to clipboard!",
+    });
+  };
+
+  const openTrackingLink = (trackingNumber: string) => {
+    const link = `${window.location.origin}/tracking?number=${trackingNumber}`;
+    window.open(link, '_blank');
+  };
+
   const filteredShipments = shipments.filter(shipment =>
     shipment.tracking_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
     shipment.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    shipment.destination.toLowerCase().includes(searchTerm.toLowerCase())
+    shipment.destination.toLowerCase().includes(searchTem.toLowerCase())
   );
 
   const getStatusColor = (status: string) => {
@@ -331,13 +419,29 @@ const AdminPage = () => {
                   Create Shipment
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create New Shipment</DialogTitle>
                 </DialogHeader>
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <div>
-                    <Label htmlFor="customer_name">Customer Name *</Label>
+                    <Label htmlFor="sender_name">Sender Name *</Label>
+                    <Input
+                      id="sender_name"
+                      value={newShipment.sender_name}
+                      onChange={(e) => setNewShipment({...newShipment, sender_name: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="sender_country">Sender Country *</Label>
+                    <Input
+                      id="sender_country"
+                      value={newShipment.sender_country}
+                      onChange={(e) => setNewShipment({...newShipment, sender_country: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="customer_name">Receiver Name *</Label>
                     <Input
                       id="customer_name"
                       value={newShipment.customer_name}
@@ -345,7 +449,15 @@ const AdminPage = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="customer_email">Customer Email</Label>
+                    <Label htmlFor="receiver_country">Receiver Country *</Label>
+                    <Input
+                      id="receiver_country"
+                      value={newShipment.receiver_country}
+                      onChange={(e) => setNewShipment({...newShipment, receiver_country: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="customer_email">Receiver Email</Label>
                     <Input
                       id="customer_email"
                       type="email"
@@ -401,7 +513,7 @@ const AdminPage = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="shipping_fee">Shipping Fee ($) *</Label>
+                    <Label htmlFor="shipping_fee">Custom Shipping Fee ($) *</Label>
                     <Input
                       id="shipping_fee"
                       type="number"
@@ -442,6 +554,69 @@ const AdminPage = () => {
           </div>
         </div>
 
+        {/* Tracking Notifications */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Bell className="w-6 h-6 mr-2" />
+              Recent Tracking Activity ({trackingNotifications.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {trackingNotifications.length > 0 ? (
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {trackingNotifications.slice(0, 10).map((notification) => (
+                  <div key={notification.id} className="flex justify-between items-center p-2 bg-blue-50 rounded">
+                    <span className="font-medium">{notification.tracking_number}</span>
+                    <span className="text-sm text-gray-600">
+                      {new Date(notification.tracked_at).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500">No tracking activity yet</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Tracking Link Display */}
+        {newTrackingLink && (
+          <Card className="mb-8 border-green-200 bg-green-50">
+            <CardHeader>
+              <CardTitle className="text-green-800">New Shipment Created!</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center space-x-2">
+                <Input value={newTrackingLink} readOnly className="flex-1" />
+                <Button 
+                  variant="outline" 
+                  onClick={() => copyTrackingLink(newTrackingLink.split('number=')[1])}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => openTrackingLink(newTrackingLink.split('number=')[1])}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-sm text-green-700 mt-2">
+                Share this link with your client to track their shipment
+              </p>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setNewTrackingLink('')}
+                className="mt-2"
+              >
+                Dismiss
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>Shipment Management</CardTitle>
@@ -463,10 +638,9 @@ const AdminPage = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Tracking Number</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Destination</TableHead>
+                    <TableHead>Sender</TableHead>
+                    <TableHead>Receiver</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Location</TableHead>
                     <TableHead>Fee</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -474,15 +648,42 @@ const AdminPage = () => {
                 <TableBody>
                   {filteredShipments.map((shipment) => (
                     <TableRow key={shipment.id}>
-                      <TableCell className="font-medium">{shipment.tracking_number}</TableCell>
-                      <TableCell>{shipment.customer_name}</TableCell>
-                      <TableCell>{shipment.destination}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center space-x-2">
+                          <span>{shipment.tracking_number}</span>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => copyTrackingLink(shipment.tracking_number)}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => openTrackingLink(shipment.tracking_number)}
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{shipment.sender_name}</div>
+                          <div className="text-sm text-gray-500">{shipment.sender_country}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{shipment.customer_name}</div>
+                          <div className="text-sm text-gray-500">{shipment.receiver_country}</div>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(shipment.status)}>
                           {shipment.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>{shipment.current_location}</TableCell>
                       <TableCell>${shipment.shipping_fee}</TableCell>
                       <TableCell>
                         <div className="flex space-x-2">

@@ -65,9 +65,26 @@ const TrackingPage = () => {
     };
   }, [currentTracking]);
 
+  const recordTrackingNotification = async (trackingNumber: string) => {
+    try {
+      await supabase
+        .from('tracking_notifications')
+        .insert([{
+          tracking_number: trackingNumber,
+          tracked_at: new Date().toISOString(),
+          user_ip: 'visitor' // You could implement IP detection if needed
+        }]);
+    } catch (error) {
+      console.error('Error recording tracking notification:', error);
+    }
+  };
+
   const handleTrackShipment = async (number: string) => {
     try {
       setLoading(true);
+      
+      // Record tracking notification for admin
+      await recordTrackingNotification(number);
       
       // Get shipment data from Supabase
       const { data: shipment, error } = await supabase
@@ -103,14 +120,16 @@ const TrackingPage = () => {
       const normalizedShipment = {
         id: shipment.id,
         trackingNumber: shipment.tracking_number,
-        senderName: 'SkyNet Express',
+        senderName: shipment.sender_name || 'SkyNet Express',
         senderAddress: shipment.origin,
         senderCity: shipment.origin,
+        senderCountry: shipment.sender_country || 'United States',
         senderPhone: '+1 (565) 310-4849',
         senderEmail: 'skyexness099@gmail.com',
         receiverName: shipment.customer_name,
         receiverAddress: shipment.destination,
         receiverCity: shipment.destination,
+        receiverCountry: shipment.receiver_country || 'United States',
         receiverPhone: '',
         receiverEmail: shipment.customer_email,
         packageWeight: shipment.weight || 'N/A',

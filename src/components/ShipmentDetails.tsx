@@ -52,7 +52,7 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentData }) => {
               <Weight className="w-5 h-5 text-blue-600 mr-2" />
               <div>
                 <p className="text-sm text-gray-600">Weight</p>
-                <p className="font-semibold">{shipmentData.weight || shipmentData.packageWeight} kg</p>
+                <p className="font-semibold">{shipmentData.weight || shipmentData.packageWeight}</p>
               </div>
             </div>
 
@@ -121,8 +121,14 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentData }) => {
               <p className="font-medium text-gray-800">{shipmentData.senderName}</p>
               <p className="text-gray-600">{shipmentData.senderAddress}</p>
               <p className="text-gray-600">{shipmentData.senderCity}</p>
+              {shipmentData.senderCountry && (
+                <p className="text-gray-600">🌍 {shipmentData.senderCountry}</p>
+              )}
               {shipmentData.senderPhone && (
                 <p className="text-gray-600">📞 {shipmentData.senderPhone}</p>
+              )}
+              {shipmentData.senderEmail && (
+                <p className="text-gray-600">✉️ {shipmentData.senderEmail}</p>
               )}
             </div>
           </div>
@@ -137,14 +143,20 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentData }) => {
               <p className="font-medium text-gray-800">{shipmentData.receiverName}</p>
               <p className="text-gray-600">{shipmentData.receiverAddress}</p>
               <p className="text-gray-600">{shipmentData.receiverCity}</p>
+              {shipmentData.receiverCountry && (
+                <p className="text-gray-600">🌍 {shipmentData.receiverCountry}</p>
+              )}
               {shipmentData.receiverPhone && (
                 <p className="text-gray-600">📞 {shipmentData.receiverPhone}</p>
+              )}
+              {shipmentData.receiverEmail && (
+                <p className="text-gray-600">✉️ {shipmentData.receiverEmail}</p>
               )}
             </div>
           </div>
 
           {/* Package Description */}
-          {shipmentData.description && (
+          {shipmentData.description && shipmentData.description !== 'Package' && (
             <div className="p-4 bg-gray-50 rounded-lg">
               <h4 className="font-semibold text-gray-800 mb-2">Package Description</h4>
               <p className="text-gray-600">{shipmentData.description}</p>
