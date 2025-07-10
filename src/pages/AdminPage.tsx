@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import AdminLogin from '../components/AdminLogin';
 import { Button } from '@/components/ui/button';
@@ -21,9 +20,9 @@ interface Shipment {
   customer_email: string;
   origin: string;
   destination: string;
-  sender_name: string;
-  sender_country: string;
-  receiver_country: string;
+  sender_name: string | null;
+  sender_country: string | null;
+  receiver_country: string | null;
   service: string;
   status: string;
   weight?: string;
@@ -383,7 +382,7 @@ const AdminPage = () => {
   const filteredShipments = shipments.filter(shipment =>
     shipment.tracking_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
     shipment.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    shipment.destination.toLowerCase().includes(searchTem.toLowerCase())
+    shipment.destination.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStatusColor = (status: string) => {
@@ -669,14 +668,14 @@ const AdminPage = () => {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{shipment.sender_name}</div>
-                          <div className="text-sm text-gray-500">{shipment.sender_country}</div>
+                          <div className="font-medium">{shipment.sender_name || 'N/A'}</div>
+                          <div className="text-sm text-gray-500">{shipment.sender_country || 'N/A'}</div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div>
                           <div className="font-medium">{shipment.customer_name}</div>
-                          <div className="text-sm text-gray-500">{shipment.receiver_country}</div>
+                          <div className="text-sm text-gray-500">{shipment.receiver_country || 'N/A'}</div>
                         </div>
                       </TableCell>
                       <TableCell>

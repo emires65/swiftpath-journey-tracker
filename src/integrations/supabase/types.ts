@@ -26,6 +26,9 @@ export type Database = {
           estimated_delivery: string | null
           id: string
           origin: string
+          receiver_country: string | null
+          sender_country: string | null
+          sender_name: string | null
           service: string
           shipping_fee: number | null
           status: string
@@ -45,6 +48,9 @@ export type Database = {
           estimated_delivery?: string | null
           id?: string
           origin: string
+          receiver_country?: string | null
+          sender_country?: string | null
+          sender_name?: string | null
           service: string
           shipping_fee?: number | null
           status?: string
@@ -64,6 +70,9 @@ export type Database = {
           estimated_delivery?: string | null
           id?: string
           origin?: string
+          receiver_country?: string | null
+          sender_country?: string | null
+          sender_name?: string | null
           service?: string
           shipping_fee?: number | null
           status?: string
@@ -111,6 +120,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tracking_notifications: {
+        Row: {
+          id: string
+          tracked_at: string
+          tracking_number: string
+          user_ip: string | null
+        }
+        Insert: {
+          id?: string
+          tracked_at?: string
+          tracking_number: string
+          user_ip?: string | null
+        }
+        Update: {
+          id?: string
+          tracked_at?: string
+          tracking_number?: string
+          user_ip?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
