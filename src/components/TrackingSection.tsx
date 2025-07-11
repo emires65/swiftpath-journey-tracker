@@ -63,7 +63,7 @@ const TrackingSection = () => {
               </form>
               
               <div className="mt-6 text-center text-sm text-gray-600">
-                <p>Need help? Contact us at <strong>contact@skyexness.org</strong></p>
+                <p>Need help? Contact us at <strong>info@easyshipment.com</strong></p>
               </div>
             </CardContent>
           </Card>

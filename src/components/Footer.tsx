@@ -13,7 +13,7 @@ const Footer = () => {
             <div className="flex items-center space-x-2 mb-6">
               <Truck className="w-8 h-8 text-blue-400" />
               <div>
-                <h3 className="text-2xl font-bold">SkyNet Express</h3>
+                <h3 className="text-2xl font-bold">EasyShipment</h3>
                 <p className="text-sm text-gray-400">Delivery Solutions</p>
               </div>
             </div>
@@ -88,7 +88,7 @@ const Footer = () => {
               
               <div className="flex items-center">
                 <Mail className="w-5 h-5 text-blue-400 mr-3" />
-                <p className="text-gray-400">skyexness099@gmail.com</p>
+                <p className="text-gray-400">info@easyshipment.com</p>
               </div>
               
               <div className="flex items-start">
@@ -106,7 +106,7 @@ const Footer = () => {
         <div className="border-t border-gray-800 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 mb-4 md:mb-0">
-              © 2024 SkyNet Express Delivery Solutions. All rights reserved.
+              © 2024 EasyShipment Delivery Solutions. All rights reserved.
             </p>
             <div className="flex space-x-6">
               <Link to="#" className="text-gray-400 hover:text-white transition-colors">
