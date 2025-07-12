@@ -17,7 +17,7 @@ const Header = () => {
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center space-x-2">
             <Package className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-gray-800">EasyShipment</span>
+            <span className="text-2xl font-bold text-gray-800">SkyNet Express</span>
           </Link>
           
           <nav className="hidden md:flex items-center space-x-8">
@@ -55,7 +55,7 @@ const Header = () => {
               </div>
               <div className="flex items-center space-x-1">
                 <Mail className="h-4 w-4 text-blue-600" />
-                <span className="text-gray-600">info@easyshipment.com</span>
+                <span className="text-gray-600">skyexness099@gmail.com</span>
               </div>
             </div>
             <Button asChild>
