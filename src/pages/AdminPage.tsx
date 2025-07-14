@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Package, Plus, Edit, Trash2, Search, LogOut, Bell, Copy, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +32,8 @@ interface Shipment {
   shipping_fee?: number;
   delivery_days?: number;
   estimated_delivery?: string;
+  package_description?: string;
+  held_by_customs?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -67,6 +70,8 @@ const AdminPage = () => {
     service: 'standard',
     weight: '',
     value: '',
+    package_description: '',
+    held_by_customs: false,
     shipping_fee: 0,
     delivery_days: 3,
     currency: 'USD',
@@ -208,6 +213,8 @@ const AdminPage = () => {
           status: 'Order Placed',
           weight: newShipment.weight,
           value: newShipment.value,
+          package_description: newShipment.package_description,
+          held_by_customs: newShipment.held_by_customs,
           current_location: 'Processing Center',
           shipping_fee: newShipment.shipping_fee,
           delivery_days: newShipment.delivery_days,
@@ -256,6 +263,8 @@ const AdminPage = () => {
         service: 'standard',
         weight: '',
         value: '',
+        package_description: '',
+        held_by_customs: false,
         shipping_fee: 0,
         delivery_days: 3,
         currency: 'USD',
@@ -535,6 +544,16 @@ const AdminPage = () => {
                       placeholder="e.g., 500"
                     />
                   </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="package_description">Package Description</Label>
+                    <Textarea
+                      id="package_description"
+                      value={newShipment.package_description}
+                      onChange={(e) => setNewShipment({...newShipment, package_description: e.target.value})}
+                      placeholder="Describe the contents of the package..."
+                      rows={3}
+                    />
+                  </div>
                   <div>
                     <Label htmlFor="currency">Currency</Label>
                     <Select value={newShipment.currency} onValueChange={(value) => setNewShipment({...newShipment, currency: value})}>
@@ -577,6 +596,16 @@ const AdminPage = () => {
                       value={newShipment.delivery_days}
                       onChange={(e) => setNewShipment({...newShipment, delivery_days: parseInt(e.target.value) || 3})}
                     />
+                  </div>
+                  <div className="col-span-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="held_by_customs"
+                        checked={newShipment.held_by_customs}
+                        onCheckedChange={(checked) => setNewShipment({...newShipment, held_by_customs: checked as boolean})}
+                      />
+                      <Label htmlFor="held_by_customs">Held by Customs</Label>
+                    </div>
                   </div>
                 </div>
                 <div className="flex justify-end space-x-2 mt-6">
@@ -685,6 +714,7 @@ const AdminPage = () => {
                     <TableHead>Receiver</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Fee</TableHead>
+                    <TableHead>Customs</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -728,6 +758,13 @@ const AdminPage = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>${shipment.shipping_fee}</TableCell>
+                      <TableCell>
+                        {shipment.held_by_customs ? (
+                          <Badge variant="destructive">Held</Badge>
+                        ) : (
+                          <Badge variant="secondary">Clear</Badge>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
                           <Button

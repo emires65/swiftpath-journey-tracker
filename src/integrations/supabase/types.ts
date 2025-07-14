@@ -24,8 +24,10 @@ export type Database = {
           delivery_days: number | null
           destination: string
           estimated_delivery: string | null
+          held_by_customs: boolean | null
           id: string
           origin: string
+          package_description: string | null
           receiver_country: string | null
           sender_country: string | null
           sender_name: string | null
@@ -46,8 +48,10 @@ export type Database = {
           delivery_days?: number | null
           destination: string
           estimated_delivery?: string | null
+          held_by_customs?: boolean | null
           id?: string
           origin: string
+          package_description?: string | null
           receiver_country?: string | null
           sender_country?: string | null
           sender_name?: string | null
@@ -68,8 +72,10 @@ export type Database = {
           delivery_days?: number | null
           destination?: string
           estimated_delivery?: string | null
+          held_by_customs?: boolean | null
           id?: string
           origin?: string
+          package_description?: string | null
           receiver_country?: string | null
           sender_country?: string | null
           sender_name?: string | null
