@@ -192,15 +192,15 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentData }) => {
               </div>
             </div>
 
-            {/* Package Description */}
-            {(shipmentData.description && shipmentData.description !== 'Package') || shipmentData.package_description ? (
+            {/* Package Description - Fixed to show the correct field */}
+            {shipmentData.package_description && shipmentData.package_description !== 'Package' && (
               <div className="p-4 bg-gray-50 rounded-lg">
                 <h4 className="font-semibold text-gray-800 mb-2">Package Description</h4>
                 <p className="text-gray-600">
-                  {shipmentData.package_description || shipmentData.description}
+                  {shipmentData.package_description}
                 </p>
               </div>
-            ) : null}
+            )}
           </CardContent>
         </Card>
       </div>
