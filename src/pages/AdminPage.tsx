@@ -53,7 +53,7 @@ const AdminPage = () => {
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [statusUpdateData, setStatusUpdateData] = useState({ status: '', location: '' });
+  const [statusUpdateData, setStatusUpdateData] = useState({ status: '', location: '', held_by_customs: false });
   const [loading, setLoading] = useState(false);
   const [newTrackingLink, setNewTrackingLink] = useState('');
 
@@ -294,12 +294,13 @@ const AdminPage = () => {
     try {
       setLoading(true);
 
-      // Update shipment status
+      // Update shipment status including customs hold status
       const { error: shipmentError } = await supabase
         .from('shipments')
         .update({
           status: statusUpdateData.status,
           current_location: statusUpdateData.location,
+          held_by_customs: statusUpdateData.held_by_customs,
           updated_at: new Date().toISOString(),
         })
         .eq('id', selectedShipment.id);
@@ -329,7 +330,7 @@ const AdminPage = () => {
       }
 
       setIsEditDialogOpen(false);
-      setStatusUpdateData({ status: '', location: '' });
+      setStatusUpdateData({ status: '', location: '', held_by_customs: false });
       loadShipments();
       
       toast({
@@ -772,6 +773,11 @@ const AdminPage = () => {
                             size="sm"
                             onClick={() => {
                               setSelectedShipment(shipment);
+                              setStatusUpdateData({ 
+                                status: '', 
+                                location: '', 
+                                held_by_customs: shipment.held_by_customs || false 
+                              });
                               setIsEditDialogOpen(true);
                             }}
                             disabled={loading}
@@ -834,6 +840,14 @@ const AdminPage = () => {
                     onChange={(e) => setStatusUpdateData({...statusUpdateData, location: e.target.value})}
                     placeholder="Enter current location"
                   />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="held_by_customs_update"
+                    checked={statusUpdateData.held_by_customs}
+                    onCheckedChange={(checked) => setStatusUpdateData({...statusUpdateData, held_by_customs: checked as boolean})}
+                  />
+                  <Label htmlFor="held_by_customs_update">Held by Customs</Label>
                 </div>
                 <div className="flex justify-end space-x-2">
                   <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={loading}>

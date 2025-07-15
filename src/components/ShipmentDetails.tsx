@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -39,7 +38,7 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentData }) => {
           <AlertTitle className="text-red-800 font-semibold">⚠️ Customs Hold Notice</AlertTitle>
           <AlertDescription className="text-red-700">
             <strong>Goods seized by customs.</strong> Your shipment is currently being held by customs authorities for inspection. 
-            Please contact our customer service team at <strong>contact@skyexness.org</strong> or call <strong>+1 (565) 310-4849</strong> 
+            Please contact our customer service team at <strong>skynessdelivery@gmail.com</strong> 
             for assistance with customs clearance procedures.
           </AlertDescription>
         </Alert>
@@ -115,7 +114,7 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentData }) => {
               </div>
               {shipmentData.held_by_customs && (
                 <p className="text-sm text-red-600 mt-2">
-                  ⚠️ Shipment requires customs clearance before delivery can proceed.
+                  ⚠️ Shipment requires customs clearance before delivery can proceed. Contact: <strong>skynessdelivery@gmail.com</strong>
                 </p>
               )}
             </div>
@@ -161,12 +160,7 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentData }) => {
                 {shipmentData.senderCountry && (
                   <p className="text-gray-600">🌍 {shipmentData.senderCountry}</p>
                 )}
-                {shipmentData.senderPhone && (
-                  <p className="text-gray-600">📞 {shipmentData.senderPhone}</p>
-                )}
-                {shipmentData.senderEmail && (
-                  <p className="text-gray-600">✉️ {shipmentData.senderEmail}</p>
-                )}
+                <p className="text-gray-600">✉️ skynessdelivery@gmail.com</p>
               </div>
             </div>
 
@@ -182,9 +176,6 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentData }) => {
                 <p className="text-gray-600">{shipmentData.receiverCity}</p>
                 {shipmentData.receiverCountry && (
                   <p className="text-gray-600">🌍 {shipmentData.receiverCountry}</p>
-                )}
-                {shipmentData.receiverPhone && (
-                  <p className="text-gray-600">📞 {shipmentData.receiverPhone}</p>
                 )}
                 {shipmentData.receiverEmail && (
                   <p className="text-gray-600">✉️ {shipmentData.receiverEmail}</p>
