@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -38,7 +39,7 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentData }) => {
           <AlertTitle className="text-red-800 font-semibold">⚠️ Customs Hold Notice</AlertTitle>
           <AlertDescription className="text-red-700">
             <strong>Goods seized by customs.</strong> Your shipment is currently being held by customs authorities for inspection. 
-            Please contact our customer service team at <strong>skynessdelivery@gmail.com</strong> 
+            Please contact our customer service team at <strong>skyexpressdelivery@gmail.com</strong> 
             for assistance with customs clearance procedures.
           </AlertDescription>
         </Alert>
@@ -114,7 +115,7 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentData }) => {
               </div>
               {shipmentData.held_by_customs && (
                 <p className="text-sm text-red-600 mt-2">
-                  ⚠️ Shipment requires customs clearance before delivery can proceed. Contact: <strong>skynessdelivery@gmail.com</strong>
+                  ⚠️ Shipment requires customs clearance before delivery can proceed. Contact: <strong>skyexpressdelivery@gmail.com</strong>
                 </p>
               )}
             </div>
@@ -160,7 +161,7 @@ const ShipmentDetails: React.FC<ShipmentDetailsProps> = ({ shipmentData }) => {
                 {shipmentData.senderCountry && (
                   <p className="text-gray-600">🌍 {shipmentData.senderCountry}</p>
                 )}
-                <p className="text-gray-600">✉️ skynessdelivery@gmail.com</p>
+                <p className="text-gray-600">✉️ skyexpressdelivery@gmail.com</p>
               </div>
             </div>
 

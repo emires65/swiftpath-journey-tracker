@@ -104,7 +104,7 @@ const ContactPage = () => {
                   <p className="text-gray-600 mb-4">
                     Send us an email for detailed inquiries
                   </p>
-                  <p className="text-lg font-semibold text-green-600">skyexness099@gmail.com</p>
+                  <p className="text-lg font-semibold text-green-600">skyexpressdelivery@gmail.com</p>
                   <p className="text-sm text-gray-500 mt-2">
                     Response within 2 hours during business hours
                   </p>

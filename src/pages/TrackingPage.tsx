@@ -125,7 +125,7 @@ const TrackingPage = () => {
         senderCity: shipment.origin,
         senderCountry: shipment.sender_country || 'United States',
         senderPhone: '',
-        senderEmail: 'skynessdelivery@gmail.com',
+        senderEmail: 'skyexpressdelivery@gmail.com',
         receiverName: shipment.customer_name,
         receiverAddress: shipment.destination,
         receiverCity: shipment.destination,
@@ -254,7 +254,7 @@ const TrackingPage = () => {
                   We couldn't find a shipment with tracking number: <strong>{currentTracking}</strong>
                 </p>
                 <p className="text-gray-500 mt-2">
-                  Please check the number and try again, or contact our support team.
+                  Please check the number and try again, or contact our support team at <strong>skyexpressdelivery@gmail.com</strong>.
                 </p>
               </CardContent>
             </Card>

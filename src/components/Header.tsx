@@ -55,7 +55,7 @@ const Header = () => {
               </div>
               <div className="flex items-center space-x-1">
                 <Mail className="h-4 w-4 text-blue-600" />
-                <span className="text-gray-600">skyexness099@gmail.com</span>
+                <span className="text-gray-600">skyexpressdelivery@gmail.com</span>
               </div>
             </div>
             <Button asChild>
